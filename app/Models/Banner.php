@@ -41,6 +41,6 @@ class Banner extends Model
 
     public function getImageUrlAttribute(): string
     {
-        return Storage::disk('public')->url($this->image);
+        return Storage::disk('public')->url($this->image).'?v='.$this->updated_at?->timestamp;
     }
 }

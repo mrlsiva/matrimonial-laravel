@@ -28,6 +28,7 @@ class CmsPage extends Model
 
     public function getImageUrlAttribute(): ?string
     {
-        return $this->image ? Storage::disk('public')->url($this->image) : null;
+        // Version stamp so a replaced image is not served from browser cache.
+        return $this->image ? Storage::disk('public')->url($this->image).'?v='.$this->updated_at?->timestamp : null;
     }
 }
