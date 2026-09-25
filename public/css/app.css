@@ -49,6 +49,10 @@ h1, h2, h3, .display-font { font-family: 'Playfair Display', Georgia, serif; }
 .page-poster img { display: block; max-width: 520px; }
 .cms-content h4 { font-size: 1.1rem; color: var(--brand); margin-top: 1.5rem; }
 .cms-content ul li, .cms-content ol li { margin-bottom: .35rem; }
+.about-icon { width: 52px; height: 52px; flex-shrink: 0; border-radius: 14px; display: grid; place-items: center; font-size: 1.5rem; color: var(--brand); background: var(--brand-soft); }
+.about-icon-lg { width: 72px; height: 72px; font-size: 2rem; background: #fff; }
+.feature-card { transition: transform .2s, box-shadow .2s; }
+.feature-card:hover { transform: translateY(-3px); box-shadow: 0 .75rem 1.75rem rgba(0, 0, 0, .08); }
 .section-title { position: relative; display: inline-block; padding-bottom: .5rem; }
 .section-title::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 60px; height: 3px; margin-left: -30px; background: var(--gold); border-radius: 3px; }
 

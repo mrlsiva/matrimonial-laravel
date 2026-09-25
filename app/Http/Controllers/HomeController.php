@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Banner;
+use App\Models\Caste;
+use App\Models\City;
 use App\Models\CmsPage;
 use App\Models\MembershipPlan;
 use App\Models\Profile;
@@ -36,6 +38,18 @@ class HomeController extends Controller
     public function page(CmsPage $cmsPage): View
     {
         abort_unless($cmsPage->is_active, 404);
+
+        if ($cmsPage->slug === 'about-us') {
+            return view('pages.about', [
+                'page' => $cmsPage,
+                'stats' => [
+                    'members' => Profile::public()->count(),
+                    'verified' => Profile::public()->where('is_verified', true)->count(),
+                    'communities' => Caste::where('is_active', true)->count(),
+                    'cities' => City::where('is_active', true)->count(),
+                ],
+            ]);
+        }
 
         return view('pages.show', ['page' => $cmsPage]);
     }

@@ -5,7 +5,7 @@
 
 @section('content')
 <div class="row justify-content-center">
-    <div class="{{ $page->image ? 'col-xl-11' : 'col-lg-9' }}">
+    <div class="col-12">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb small">
                 <li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li>
