@@ -116,3 +116,9 @@ h1, h2, h3, .display-font { font-family: 'Playfair Display', Georgia, serif; }
     .no-print, .site-nav, .site-footer { display: none !important; }
     body { background: #fff; }
 }
+
+/* Checkbox dropdown used for multi-selects (see enhanceMultiSelect in app.js) */
+.multi-select .dropdown-menu { z-index: 1030; }
+.multi-select .multi-select-list { max-height: 260px; overflow-y: auto; }
+.multi-select .dropdown-item { cursor: pointer; white-space: normal; }
+.multi-select .dropdown-item:active { background-color: var(--bs-tertiary-bg); color: inherit; }

@@ -10,6 +10,12 @@
                 <i class="bi bi-envelope-check display-4 text-brand"></i>
                 <h1 class="h4 mt-3">Verify your email</h1>
                 <p class="text-muted small">Enter the 6-digit code we sent to <strong>{{ auth()->user()->email }}</strong>.</p>
+                @if(session('dev_otp'))
+                    <div class="alert alert-warning small text-start">
+                        <i class="bi bi-bug me-1"></i><strong>Local testing:</strong> email/SMS is not sent (MAIL_MAILER=log).
+                        Your code is <strong class="fs-5" style="letter-spacing:.2em">{{ session('dev_otp') }}</strong>
+                    </div>
+                @endif
 
                 <form method="POST" action="{{ route('verification.verify') }}" class="mt-3">
                     @csrf

@@ -9,6 +9,8 @@ use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Notifications\PaymentSuccessful;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class SubscriptionService
@@ -48,13 +50,14 @@ class SubscriptionService
      * Renewing the same plan extends from the current expiry; switching plans starts now
      * and cancels the previous subscription.
      */
-    public function activate(User $user, MembershipPlan $plan, ?Payment $payment = null): Subscription
+    public function activate(User $user, MembershipPlan $plan, ?Payment $payment = null, ?CarbonInterface $startsAt = null): Subscription
     {
         $current = $user->activeSubscription()->first();
-        $extendFrom = now();
+        $startsAt = $startsAt ? Carbon::parse($startsAt) : now();
+        $extendFrom = $startsAt->copy();
 
         if ($current && $current->membership_plan_id === $plan->id) {
-            $extendFrom = $current->expires_at->copy();
+            $extendFrom = $current->expires_at->max($startsAt)->copy();
             $current->update(['status' => 'expired', 'expires_at' => now()]);
         } elseif ($current) {
             $current->update(['status' => 'cancelled']);
@@ -65,10 +68,103 @@ class SubscriptionService
             'membership_plan_id' => $plan->id,
             'payment_id' => $payment?->id,
             'amount' => $payment?->amount ?? $plan->price,
-            'starts_at' => now(),
+            'starts_at' => $startsAt,
             'expires_at' => $extendFrom->addDays($plan->duration_days),
             'status' => 'active',
         ]);
+    }
+
+    /**
+     * Record an offline (cash / UPI / bank) payment. A "paid" payment activates the plan
+     * straight away, starting from the date the money was received.
+     */
+    public function recordManualPayment(User $user, MembershipPlan $plan, array $data, ?User $admin = null, bool $notify = true): Payment
+    {
+        $payment = DB::transaction(function () use ($user, $plan, $data, $admin) {
+            $payment = Payment::create([
+                'user_id' => $user->id,
+                'membership_plan_id' => $plan->id,
+                'source' => Payment::SOURCE_MANUAL,
+                'amount' => $data['amount'] ?? $plan->price,
+                'currency' => config('services.razorpay.currency', 'INR'),
+                'status' => $data['status'] ?? 'paid',
+                'method' => $data['method'] ?? 'cash',
+                'reference' => $data['reference'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'recorded_by' => $admin?->id,
+            ]);
+
+            if ($payment->isPaid()) {
+                $this->markManualPaid($payment, $data['paid_at'] ?? null);
+            }
+
+            return $payment;
+        });
+
+        if ($notify && $payment->isPaid()) {
+            $user->notify(new PaymentSuccessful($payment->fresh('plan')));
+        }
+
+        return $payment;
+    }
+
+    /** Apply admin edits to a manual payment, keeping its subscription in step with the status. */
+    public function updateManualPayment(Payment $payment, array $data, bool $notify = true): Payment
+    {
+        $becamePaid = DB::transaction(function () use ($payment, $data) {
+            $wasPaid = $payment->isPaid();
+            $payment->fill(collect($data)->only(['amount', 'method', 'reference', 'notes', 'status'])->all());
+            if (! $wasPaid && isset($data['membership_plan_id'])) {
+                $payment->membership_plan_id = $data['membership_plan_id'];
+            }
+            $payment->save();
+
+            if (! $wasPaid && $payment->isPaid()) {
+                $this->markManualPaid($payment, $data['paid_at'] ?? null);
+
+                return true;
+            }
+
+            if ($wasPaid && ! $payment->isPaid()) {
+                // Money not received after all: withdraw the plan it granted.
+                $payment->subscription?->update(['status' => 'cancelled']);
+                $payment->update(['paid_at' => null]);
+            } elseif ($payment->isPaid()) {
+                if (! empty($data['paid_at'])) {
+                    $payment->update(['paid_at' => $data['paid_at']]);
+                }
+                $subscription = $payment->subscription;
+                if ($subscription) {
+                    $subscription->update(array_filter([
+                        'amount' => $payment->amount,
+                        'starts_at' => $data['starts_at'] ?? null,
+                        'expires_at' => $data['expires_at'] ?? null,
+                    ]));
+                }
+            }
+
+            return false;
+        });
+
+        if ($notify && $becamePaid) {
+            $payment->user->notify(new PaymentSuccessful($payment->fresh('plan')));
+        }
+
+        return $payment->fresh(['plan', 'subscription']);
+    }
+
+    private function markManualPaid(Payment $payment, mixed $paidAt): void
+    {
+        $paidAt = $paidAt ? Carbon::parse($paidAt) : now();
+        $payment->update([
+            'status' => 'paid',
+            'paid_at' => $paidAt,
+            'failure_reason' => null,
+            'invoice_no' => $payment->invoice_no ?? sprintf('INV-%s-%06d', $paidAt->format('Ym'), $payment->id),
+        ]);
+
+        // A back-dated receipt starts the plan on the day the money was received.
+        $this->activate($payment->user, $payment->plan, $payment, $paidAt->isToday() ? now() : $paidAt);
     }
 
     /** Plan limits in effect for the user (paid plan, else the free plan). */

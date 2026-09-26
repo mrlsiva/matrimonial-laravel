@@ -64,6 +64,100 @@
     }
     document.querySelectorAll('select[data-dependent]').forEach(bindDependent);
 
+    // Multi-selects: replace the native list box with a checkbox dropdown.
+    // The original <select> stays in the form (hidden) and remains the source of truth.
+    function enhanceMultiSelect(select) {
+        const placeholder = select.dataset.placeholder || 'Any';
+        const wrap = document.createElement('div');
+        wrap.className = 'dropdown multi-select';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'form-select text-start text-truncate'
+            + (select.classList.contains('form-select-sm') ? ' form-select-sm' : '')
+            + (select.classList.contains('is-invalid') ? ' is-invalid' : '');
+        btn.setAttribute('data-bs-toggle', 'dropdown');
+        btn.setAttribute('data-bs-auto-close', 'outside');
+        btn.setAttribute('aria-expanded', 'false');
+        const menu = document.createElement('div');
+        menu.className = 'dropdown-menu w-100 p-0';
+        wrap.append(btn, menu);
+        select.classList.add('d-none');
+        select.after(wrap);
+
+        const label = select.id && document.querySelector(`label[for="${select.id}"]`);
+        if (label) label.addEventListener('click', e => { e.preventDefault(); btn.focus(); });
+
+        function updateButton() {
+            const chosen = [...select.selectedOptions].map(o => o.text);
+            btn.textContent = !chosen.length ? placeholder
+                : chosen.length <= 2 ? chosen.join(', ')
+                : `${chosen.slice(0, 2).join(', ')} +${chosen.length - 2} more`;
+            btn.classList.toggle('text-muted', !chosen.length);
+        }
+
+        function render() {
+            menu.innerHTML = '';
+            const opts = [...select.options];
+            if (!opts.length) {
+                menu.innerHTML = '<div class="px-3 py-2 small text-muted">No options available</div>';
+                updateButton();
+                return;
+            }
+            const head = document.createElement('div');
+            head.className = 'd-flex gap-2 align-items-center p-2 border-bottom';
+            if (opts.length > 8) {
+                const search = document.createElement('input');
+                search.type = 'search';
+                search.className = 'form-control form-control-sm';
+                search.placeholder = 'Search...';
+                search.addEventListener('input', () => {
+                    const q = search.value.toLowerCase();
+                    list.querySelectorAll('label').forEach(l => l.classList.toggle('d-none', !l.textContent.toLowerCase().includes(q)));
+                });
+                head.appendChild(search);
+            }
+            const clear = document.createElement('button');
+            clear.type = 'button';
+            clear.className = 'btn btn-link btn-sm text-decoration-none ms-auto text-nowrap';
+            clear.textContent = `Clear (${placeholder})`;
+            clear.addEventListener('click', () => {
+                opts.forEach(o => { o.selected = false; });
+                list.querySelectorAll('input').forEach(cb => { cb.checked = false; });
+                updateButton();
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+            head.appendChild(clear);
+
+            const list = document.createElement('div');
+            list.className = 'multi-select-list py-1';
+            opts.forEach(o => {
+                const item = document.createElement('label');
+                item.className = 'dropdown-item d-flex align-items-center gap-2';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.className = 'form-check-input m-0';
+                cb.checked = o.selected;
+                cb.addEventListener('change', () => {
+                    o.selected = cb.checked;
+                    updateButton();
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+                const span = document.createElement('span');
+                span.textContent = o.text;
+                item.append(cb, span);
+                list.appendChild(item);
+            });
+            menu.append(head, list);
+            updateButton();
+        }
+
+        render();
+        // Re-render when options are replaced (e.g. castes reloaded for a new religion) or the select is disabled.
+        new MutationObserver(() => { btn.disabled = select.disabled; render(); })
+            .observe(select, { childList: true, attributes: true, attributeFilter: ['disabled'] });
+    }
+    document.querySelectorAll('select[multiple]').forEach(enhanceMultiSelect);
+
     // Send interest / shortlist / generic AJAX action buttons: <button data-ajax="url" data-method="POST">
     document.addEventListener('click', async (e) => {
         const btn = e.target.closest('[data-ajax]');

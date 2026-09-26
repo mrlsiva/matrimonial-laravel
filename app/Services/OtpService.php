@@ -33,6 +33,11 @@ class OtpService
             'expires_at' => now()->addMinutes($minutes),
         ]);
 
+        // Local development only: emails/SMS go to the log, so surface the code on screen.
+        if (app()->isLocal() && config('mail.default') === 'log' && app()->bound('session')) {
+            session()->flash('dev_otp', $code);
+        }
+
         if (self::isEmail($identifier)) {
             Mail::to($identifier)->send(new OtpMail($code, $purpose, $minutes));
         } else {

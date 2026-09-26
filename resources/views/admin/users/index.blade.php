@@ -3,6 +3,11 @@
 @section('title', 'Users')
 
 @section('content')
+<div class="d-flex flex-wrap justify-content-end gap-2 mb-3">
+    <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-download me-1"></i>Download (CSV)</a>
+    <a href="{{ route('admin.users.import') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-upload me-1"></i>Bulk upload</a>
+    <a href="{{ route('admin.users.create') }}" class="btn btn-sm btn-primary"><i class="bi bi-person-plus me-1"></i>Add member</a>
+</div>
 <form method="GET" class="card stat-card mb-3">
     <div class="card-body row g-2 align-items-end">
         <div class="col-md-4"><input type="search" name="q" value="{{ request('q') }}" class="form-control form-control-sm" placeholder="Name, email, mobile or profile ID" aria-label="Search"></div>

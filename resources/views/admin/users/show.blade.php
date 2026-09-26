@@ -6,7 +6,9 @@
 @php($p = $user->profile)
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <a href="{{ route('admin.users.index') }}" class="btn btn-sm btn-light border"><i class="bi bi-arrow-left"></i> Users</a>
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil me-1"></i>Edit details</a>
+        <a href="{{ route('admin.payments.create', ['user_id' => $user->id]) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-cash-coin me-1"></i>Record payment</a>
         @if($p)
             <form method="POST" action="{{ route('admin.profiles.verify', $p) }}">@csrf @method('PATCH')
                 <button class="btn btn-sm {{ $p->is_verified ? 'btn-outline-primary' : 'btn-primary' }}"><i class="bi bi-patch-check me-1"></i>{{ $p->is_verified ? 'Remove badge' : 'Grant verified badge' }}</button>
@@ -116,14 +118,25 @@
         </div></div>
 
         <div class="card stat-card"><div class="card-body">
-            <h2 class="h6">Payments</h2>
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="h6">Payments</h2>
+                <a href="{{ route('admin.payments.create', ['user_id' => $user->id]) }}" class="btn btn-sm btn-link p-0"><i class="bi bi-plus-lg"></i> Record payment</a>
+            </div>
             <table class="table table-sm small mb-0">
-                <thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th><th>Invoice</th></tr></thead>
+                <thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Paid by</th><th>Status</th><th>Invoice</th><th></th></tr></thead>
                 <tbody>
                 @forelse($payments as $pay)
-                    <tr><td>{{ $pay->created_at->format('d M Y') }}</td><td>{{ $pay->plan?->name }}</td><td>₹{{ number_format($pay->amount, 2) }}</td><td><span class="badge bg-{{ $pay->statusBadge() }}">{{ $pay->status }}</span></td><td><a href="{{ route('admin.payments.show', $pay) }}">{{ $pay->invoice_no ?? 'View' }}</a></td></tr>
+                    <tr>
+                        <td>{{ ($pay->paid_at ?? $pay->created_at)->format('d M Y') }}</td>
+                        <td>{{ $pay->plan?->name }}</td>
+                        <td>₹{{ number_format($pay->amount, 2) }}</td>
+                        <td>{{ $pay->methodLabel() }}@if($pay->isManual()) <span class="badge bg-light text-dark border">manual</span>@endif</td>
+                        <td><span class="badge bg-{{ $pay->statusBadge() }}">{{ $pay->status === 'created' ? 'pending' : $pay->status }}</span></td>
+                        <td><a href="{{ route('admin.payments.show', $pay) }}">{{ $pay->invoice_no ?? 'View' }}</a></td>
+                        <td class="text-end">@if($pay->isManual())<a href="{{ route('admin.payments.edit', $pay) }}" title="Edit payment"><i class="bi bi-pencil"></i></a>@endif</td>
+                    </tr>
                 @empty
-                    <tr><td colspan="5" class="text-muted">None</td></tr>
+                    <tr><td colspan="7" class="text-muted">None</td></tr>
                 @endforelse
                 </tbody>
             </table>

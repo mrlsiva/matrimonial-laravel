@@ -9,6 +9,12 @@
             <div class="card-body p-4 p-md-5">
                 <h1 class="h3 text-center mb-2">Login with OTP</h1>
                 <p class="text-center text-muted small mb-4">We'll send a one-time code to your registered email or mobile.</p>
+                @if(session('dev_otp'))
+                    <div class="alert alert-warning small text-start">
+                        <i class="bi bi-bug me-1"></i><strong>Local testing:</strong> email/SMS is not sent (MAIL_MAILER=log).
+                        Your code is <strong class="fs-5" style="letter-spacing:.2em">{{ session('dev_otp') }}</strong>
+                    </div>
+                @endif
 
                 <form method="POST" action="{{ route('login.otp.send') }}" class="row g-2 mb-3">
                     @csrf

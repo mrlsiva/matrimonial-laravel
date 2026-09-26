@@ -3,13 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileRequest;
-use App\Models\Caste;
-use App\Models\City;
-use App\Models\EducationLevel;
-use App\Models\Occupation;
 use App\Models\Profile;
-use App\Models\Religion;
-use App\Models\State;
+use App\Services\ProfileFormOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -23,7 +18,7 @@ class ProfileController extends Controller
             return redirect()->route('profile.edit');
         }
 
-        return view('profile.form', $this->formData(new Profile(['created_by' => 'self'])));
+        return view('profile.form', ProfileFormOptions::for(new Profile(['created_by' => 'self'])));
     }
 
     public function store(ProfileRequest $request): RedirectResponse
@@ -41,7 +36,7 @@ class ProfileController extends Controller
 
     public function edit(Request $request): View
     {
-        return view('profile.form', $this->formData($request->user()->profile));
+        return view('profile.form', ProfileFormOptions::for($request->user()->profile));
     }
 
     public function update(ProfileRequest $request): RedirectResponse
@@ -88,21 +83,5 @@ class ProfileController extends Controller
 
         $path = $request->file('horoscope')->store('horoscopes/'.$profile->user_id, 'local');
         $profile->forceFill(['horoscope_file' => $path])->save();
-    }
-
-    private function formData(Profile $profile): array
-    {
-        return [
-            'profile' => $profile,
-            'religions' => Religion::active()->get(['id', 'name']),
-            'castes' => $profile->religion_id ? Caste::where('religion_id', $profile->religion_id)->where('is_active', true)->orderBy('name')->get(['id', 'name']) : collect(),
-            'partnerCastes' => $profile->partner_religion_id ? Caste::where('religion_id', $profile->partner_religion_id)->where('is_active', true)->orderBy('name')->get(['id', 'name']) : collect(),
-            'educationLevels' => EducationLevel::active()->get(['id', 'name']),
-            'occupations' => Occupation::active()->get(['id', 'name']),
-            'states' => State::active()->get(['id', 'name']),
-            'cities' => $profile->state_id ? City::where('state_id', $profile->state_id)->where('is_active', true)->orderBy('name')->get(['id', 'name']) : collect(),
-            'options' => config('matrimony.options'),
-            'heights' => Profile::heightOptions(),
-        ];
     }
 }

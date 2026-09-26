@@ -139,7 +139,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active', 'role:admi
     Route::get('/', [Admin\DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/users', [Admin\UserController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [Admin\UserController::class, 'create'])->name('users.create');
+    Route::post('/users', [Admin\UserController::class, 'store'])->name('users.store');
+    Route::get('/users/import', [Admin\MemberImportController::class, 'create'])->name('users.import');
+    Route::post('/users/import', [Admin\MemberImportController::class, 'store'])->name('users.import.store');
+    Route::get('/users/import/template', [Admin\MemberImportController::class, 'template'])->name('users.import.template');
     Route::get('/users/{user}', [Admin\UserController::class, 'show'])->name('users.show');
+    Route::get('/users/{user}/edit', [Admin\UserController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{user}', [Admin\UserController::class, 'update'])->name('users.update');
     Route::patch('/users/{user}/status', [Admin\UserController::class, 'updateStatus'])->name('users.status');
     Route::delete('/users/{user}', [Admin\UserController::class, 'destroy'])->name('users.destroy');
 
@@ -160,7 +167,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active', 'role:admi
     Route::delete('/masters/{type}/{id}', [Admin\MasterDataController::class, 'destroy'])->name('masters.destroy');
 
     Route::get('/payments', [Admin\PaymentController::class, 'index'])->name('payments.index');
+    Route::get('/payments/create', [Admin\PaymentController::class, 'create'])->name('payments.create');
+    Route::post('/payments', [Admin\PaymentController::class, 'store'])->name('payments.store');
     Route::get('/payments/{payment}', [Admin\PaymentController::class, 'show'])->name('payments.show');
+    Route::get('/payments/{payment}/edit', [Admin\PaymentController::class, 'edit'])->name('payments.edit');
+    Route::put('/payments/{payment}', [Admin\PaymentController::class, 'update'])->name('payments.update');
     Route::get('/subscriptions', [Admin\PaymentController::class, 'subscriptions'])->name('subscriptions.index');
 
     Route::resource('pages', Admin\CmsPageController::class)->except('show')->parameters(['pages' => 'page']);

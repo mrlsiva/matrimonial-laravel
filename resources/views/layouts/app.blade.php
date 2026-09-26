@@ -16,7 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="{{ asset('css/app.css') }}?v=6" rel="stylesheet">
+    <link href="{{ asset('css/app.css') }}?v=7" rel="stylesheet">
     @stack('styles')
 </head>
 <body>
@@ -140,7 +140,7 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ asset('js/app.js') }}?v=1"></script>
+<script src="{{ asset('js/app.js') }}?v=2"></script>
 @stack('scripts')
 </body>
 </html>

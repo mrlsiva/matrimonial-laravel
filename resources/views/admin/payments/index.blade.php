@@ -5,11 +5,13 @@
 @section('content')
 <form method="GET" class="card stat-card mb-3">
     <div class="card-body row g-2 align-items-end small">
-        <div class="col-md-3"><label class="form-label mb-1">Search</label><input type="search" name="q" value="{{ request('q') }}" class="form-control form-control-sm" placeholder="Invoice, order/payment ID, member"></div>
+        <div class="col-md-2"><label class="form-label mb-1">Search</label><input type="search" name="q" value="{{ request('q') }}" class="form-control form-control-sm" placeholder="Invoice, receipt/UTR, member"></div>
         <div class="col-6 col-md-2"><label class="form-label mb-1">Status</label>
             <select name="status" class="form-select form-select-sm"><option value="">All</option>@foreach(['paid', 'failed', 'created'] as $s)<option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst($s) }}</option>@endforeach</select></div>
         <div class="col-6 col-md-2"><label class="form-label mb-1">Plan</label>
             <select name="plan" class="form-select form-select-sm"><option value="">All</option>@foreach($plans as $id => $name)<option value="{{ $id }}" @selected(request('plan') == $id)>{{ $name }}</option>@endforeach</select></div>
+        <div class="col-6 col-md-1"><label class="form-label mb-1">Source</label>
+            <select name="source" class="form-select form-select-sm"><option value="">All</option><option value="razorpay" @selected(request('source') === 'razorpay')>Online</option><option value="manual" @selected(request('source') === 'manual')>Manual</option></select></div>
         <div class="col-6 col-md-2"><label class="form-label mb-1">From</label><input type="date" name="from" value="{{ request('from') }}" class="form-control form-control-sm"></div>
         <div class="col-6 col-md-2"><label class="form-label mb-1">To</label><input type="date" name="to" value="{{ request('to') }}" class="form-control form-control-sm"></div>
         <div class="col-md-1 d-grid gap-1">
@@ -20,13 +22,16 @@
 
 <div class="d-flex justify-content-between align-items-center mb-2">
     <div class="small">Paid total for current filter: <strong>₹{{ number_format($totalPaid, 2) }}</strong></div>
-    <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-download me-1"></i>Export CSV</a>
+    <div class="d-flex gap-2">
+        <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-download me-1"></i>Export CSV</a>
+        <a href="{{ route('admin.payments.create') }}" class="btn btn-sm btn-primary"><i class="bi bi-cash-coin me-1"></i>Record manual payment</a>
+    </div>
 </div>
 
 <div class="card stat-card">
     <div class="table-responsive">
         <table class="table table-hover mb-0 small">
-            <thead class="table-light"><tr><th>Date</th><th>Member</th><th>Plan</th><th>Amount</th><th>Invoice</th><th>Razorpay IDs</th><th>Status</th></tr></thead>
+            <thead class="table-light"><tr><th>Date</th><th>Member</th><th>Plan</th><th>Amount</th><th>Invoice</th><th>Paid by / reference</th><th>Status</th></tr></thead>
             <tbody>
             @forelse($payments as $p)
                 <tr onclick="location='{{ route('admin.payments.show', $p) }}'" style="cursor:pointer">
@@ -35,8 +40,14 @@
                     <td>{{ $p->plan?->name }}</td>
                     <td>₹{{ number_format($p->amount, 2) }}</td>
                     <td>{{ $p->invoice_no ?? '—' }}</td>
-                    <td class="text-muted">{{ $p->razorpay_order_id }}<br>{{ $p->razorpay_payment_id }}</td>
-                    <td><span class="badge bg-{{ $p->statusBadge() }}">{{ $p->status }}</span></td>
+                    <td class="text-muted">
+                        @if($p->isManual())
+                            {{ $p->methodLabel() }} <span class="badge bg-light text-dark border">manual</span><br>{{ $p->reference }}
+                        @else
+                            {{ $p->razorpay_order_id }}<br>{{ $p->razorpay_payment_id }}
+                        @endif
+                    </td>
+                    <td><span class="badge bg-{{ $p->statusBadge() }}">{{ $p->status === 'created' ? 'pending' : $p->status }}</span></td>
                 </tr>
             @empty
                 <tr><td colspan="7" class="text-center text-muted py-4">No transactions found.</td></tr>

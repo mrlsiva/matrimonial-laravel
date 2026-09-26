@@ -42,8 +42,12 @@
                     </tfoot>
                 </table>
                 <div class="small text-muted">
-                    Payment method: {{ strtoupper($payment->method ?? 'Online') }} via Razorpay<br>
-                    Transaction ID: {{ $payment->razorpay_payment_id }} · Order ID: {{ $payment->razorpay_order_id }}
+                    @if($payment->isManual())
+                        Payment method: {{ $payment->methodLabel() }}@if($payment->reference) · Reference: {{ $payment->reference }}@endif
+                    @else
+                        Payment method: {{ strtoupper($payment->method ?? 'Online') }} via Razorpay<br>
+                        Transaction ID: {{ $payment->razorpay_payment_id }} · Order ID: {{ $payment->razorpay_order_id }}
+                    @endif
                 </div>
                 <p class="small text-muted mt-4 mb-0">This is a computer-generated invoice and does not require a signature.</p>
             </div>
